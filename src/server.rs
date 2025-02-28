@@ -69,7 +69,7 @@ const BUF_SIZE: usize = 65536;
 const EDITABLE_TEXT_MAX_SIZE: u64 = 4194304;
 // 4M
 const RESUMABLE_UPLOAD_MIN_SIZE: u64 = 20971520;
-const MEGA_STORAGE_HEADER: &str = "x-mega-storage";// 20M
+const MEGA_STORAGE_HEADER: &str = "x-mega-storage"; // 20M
 
 use serde::{Deserialize, Serialize};
 
@@ -168,8 +168,20 @@ impl Server {
             return Ok(res);
         }
 
-        if method == Method::GET && self.handle_assets(req_path, headers, &mut res).await? {
-            return Ok(res);
+        if method == Method::GET {
+            if req_path == "/" {
+                *res.status_mut() = StatusCode::MOVED_PERMANENTLY;
+                let new_loc =
+                    self.args.uri_prefix.to_string() + self.args.defualt_path.clone().as_str();
+                println!("Redirect to: {}", new_loc);
+                res.headers_mut()
+                    .insert("Location", HeaderValue::from_str(&new_loc)?);
+                return Ok(res);
+            }
+
+            if self.handle_assets(req_path, headers, &mut res).await? {
+                return Ok(res);
+            }
         }
 
         let authorization = headers.get(AUTHORIZATION);
@@ -284,7 +296,7 @@ impl Server {
                                 access_paths,
                                 &mut res,
                             )
-                                .await?;
+                            .await?;
                         } else {
                             self.handle_render_index(
                                 path,
@@ -295,7 +307,7 @@ impl Server {
                                 access_paths,
                                 &mut res,
                             )
-                                .await?;
+                            .await?;
                         }
                     } else if render_index || render_spa {
                         self.handle_render_index(
@@ -307,7 +319,7 @@ impl Server {
                             access_paths,
                             &mut res,
                         )
-                            .await?;
+                        .await?;
                     } else if query_params.contains_key("zip") {
                         if !allow_archive {
                             status_not_found(&mut res);
@@ -324,7 +336,7 @@ impl Server {
                             access_paths,
                             &mut res,
                         )
-                            .await?;
+                        .await?;
                     } else if query_params.contains_key("statistic") {
                         self.handle_statistic_dir(path, &mut res).await?;
                     } else {
@@ -337,7 +349,7 @@ impl Server {
                             access_paths,
                             &mut res,
                         )
-                            .await?;
+                        .await?;
                     }
                 } else if is_file {
                     if query_params.contains_key("edit") {
@@ -358,7 +370,7 @@ impl Server {
                             &mut res,
                             "application/octet-stream",
                         )
-                            .await?;
+                        .await?;
                     }
                 } else if render_spa {
                     self.handle_render_spa(path, headers, head_only, &mut res)
@@ -373,7 +385,7 @@ impl Server {
                         access_paths,
                         &mut res,
                     )
-                        .await?;
+                    .await?;
                 } else {
                     status_not_found(&mut res);
                 }
@@ -606,7 +618,7 @@ impl Server {
             }
             (size, count)
         })
-            .await?;
+        .await?;
         let output = format!(r#"{{"size":{},"count":{}}}"#, size, count);
         res.headers_mut()
             .typed_insert(ContentType::from(mime_guess::mime::APPLICATION_JSON));
@@ -677,7 +689,7 @@ impl Server {
                 }
                 paths
             })
-                .await?;
+            .await?;
             for search_path in search_paths.into_iter() {
                 if let Ok(Some(item)) = self.to_pathitem(search_path, path.to_path_buf()).await {
                     paths.push(item);
@@ -724,7 +736,7 @@ impl Server {
                 compression,
                 running,
             )
-                .await
+            .await
             {
                 error!("Failed to zip {}, {}", path.display(), e);
             }
@@ -988,7 +1000,7 @@ impl Server {
                 access_paths,
                 running,
             )
-                .await
+            .await
             {
                 error!("Failed to zip {}, {}", base_path.display(), e);
             }
@@ -1329,11 +1341,7 @@ impl Server {
         let meta = fs::symlink_metadata(path).await?;
         if meta.is_dir() {
             log::info!("copy dir: {} -> {}", path.display(), dest.display());
-            Command::new("cp")
-                .arg("-r")
-                .arg(path)
-                .arg(dest)
-                .output()?;
+            Command::new("cp").arg("-r").arg(path).arg(dest).output()?;
             // status_forbid(res);
             status_no_content(res);
             return Ok(());
@@ -1620,8 +1628,8 @@ impl Server {
 
     async fn to_pathitem<P: AsRef<Path>>(&self, path: P, base_path: P) -> Result<Option<PathItem>> {
         let path = path.as_ref();
-        let (meta, ) = tokio::join!(fs::symlink_metadata(&path));
-        let (meta, ) = (meta?, );
+        let (meta,) = tokio::join!(fs::symlink_metadata(&path));
+        let (meta,) = (meta?,);
         let is_symlink = meta.is_symlink();
         if !self.args.allow_symlink && is_symlink && !self.is_root_contained(path).await {
             return Ok(None);
@@ -1914,7 +1922,7 @@ async fn zip_dir<W: AsyncWrite + Unpin>(
         }
         paths
     })
-        .await?;
+    .await?;
     for zip_path in zip_paths.into_iter() {
         let filename = match zip_path.strip_prefix(dir).ok().and_then(|v| v.to_str()) {
             Some(v) => v,
@@ -1977,7 +1985,7 @@ async fn zip_dir_or_file<W: AsyncWrite + Unpin>(
 
         paths
     })
-        .await?;
+    .await?;
 
     for zip_path in zip_paths.into_iter() {
         let filename = match zip_path
@@ -2044,7 +2052,7 @@ fn set_content_disposition(res: &mut Response, inline: bool, filename: &str) -> 
         })
         .collect();
     let value = if filename.is_ascii() {
-        HeaderValue::from_str(&format!("{kind}; filename=\"{}\"", filename, ))?
+        HeaderValue::from_str(&format!("{kind}; filename=\"{}\"", filename,))?
     } else {
         HeaderValue::from_str(&format!(
             "{kind}; filename=\"{}\"; filename*=UTF-8''{}",

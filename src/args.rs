@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use async_zip::Compression;
-use clap::{Arg, ArgAction, ArgMatches, Command, value_parser, ValueEnum};
 use clap::builder::{PossibleValue, PossibleValuesParser};
+use clap::{value_parser, Arg, ArgAction, ArgMatches, Command, ValueEnum};
 use clap_complete::{generate, Generator, Shell};
 use serde::{Deserialize, Deserializer};
 use smart_default::SmartDefault;
@@ -220,6 +220,13 @@ pub fn build_cli() -> Command {
                 .value_name("Storage id-names")
                 .value_parser(value_parser!(String))
                 .help("Set mega storage"),
+        )
+        .arg(
+            Arg::new("default-path")
+                .long("default-path")
+                .value_name("default path")
+                .value_parser(value_parser!(String))
+                .help("Set defualt path when open"),
         );
 
     #[cfg(feature = "tls")]
@@ -292,6 +299,9 @@ pub struct Args {
     pub tls_cert: Option<PathBuf>,
     pub tls_key: Option<PathBuf>,
     pub mega_storage: String,
+    #[serde(default = "default_path")]
+    #[default(default_path())]
+    pub defualt_path: String,
 }
 
 impl Args {
@@ -304,6 +314,10 @@ impl Args {
 
         if let Some(mega_storage) = matches.get_one::<String>("mega-storage") {
             args.mega_storage = mega_storage.clone();
+        }
+
+        if let Some(default_path) = matches.get_one::<String>("default-path") {
+            args.defualt_path = default_path.clone();
         }
 
         if let Some(config_path) = matches.get_one::<PathBuf>("config") {
@@ -612,6 +626,11 @@ where
 
 fn default_serve_path() -> PathBuf {
     PathBuf::from(".")
+}
+
+fn default_path() -> String {
+    println!("default path is {}", "spirit");
+    "spirit".to_string()
 }
 
 fn default_addrs() -> Vec<BindAddr> {

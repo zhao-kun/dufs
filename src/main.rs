@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
     let running = Arc::new(AtomicBool::new(true));
     let listening = print_listening(&args, &print_addrs)?;
     let handles = serve(args, running.clone())?;
-    println!("{listening}");
+    println!("HHHHH {listening}");
 
     tokio::select! {
         ret = join_all(handles) => {

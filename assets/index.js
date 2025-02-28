@@ -311,7 +311,7 @@ function addBreadcrumb(href, uri_prefix) {
       }
       path += encodeURIComponent(name);
     }
-    const encodedName = encodedStr(i === 1 ? "root" : name);
+    const encodedName = encodedStr(name);
     if (i === 0) {
       // $breadcrumb.insertAdjacentHTML("beforeend", `<a href="${path}" title="Root"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5z"/></svg></a>`);
     } else if (i === len - 1) {
@@ -1157,7 +1157,7 @@ async function moveBatchPaths(items) {
 
 function wrapDefaultPathPrefixNode(nodes) {
   return [{
-    name: "/root",
+    name: "/",
     id: getDefaultPathPrefix(),
     children: nodes
   }]
@@ -1523,9 +1523,11 @@ function urlToRootPath(fileUrl) {
   const fileUrlObj = new URL(fileUrl)
   const prefix = DATA.uri_prefix.slice(0, -1);
   const pathSegments = fileUrlObj.pathname.slice(prefix.length).split('/');
+  //pathSegments.splice(1, 0, "spirit");
   const firstSegment = pathSegments[1];
-  pathSegments[1] = ROOT;
+  //pathSegments[1] = ROOT;
   const filePath = decodeURIComponent(pathSegments.join('/'));
+  console.log("file path is ", filePath)
   return [filePath, firstSegment]
 }
 
@@ -1574,10 +1576,7 @@ async function doMovePath(fileUrl) {
   let newPath = prompt("新路径", filePath)
   if (!newPath) return;
   if (filePath === newPath) return;
-  if (!newPath.startsWith(`/${ROOT}`)) {
-    alert(`不能将文件移出 /root 文件夹`);
-    return;
-  }
+
 
   const prefix = DATA.uri_prefix.slice(0, -1);
   const fileUrlObj = new URL(fileUrl)
